@@ -3,66 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <title>OCR Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #uploadForm {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        #output {
+            white-space: pre-wrap; 
+            border: 1px solid #ccc; 
+            padding: 15px; 
+            margin-top: 15px;
+            min-height: 100px;
+            border-radius: 5px;
+        }
+        #statusMessage {
+            color: #666;
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #imagePreview {
+            max-width: 300px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-
-    <h1>Upload Image for OCR</h1>
-
-    <form id="uploadForm">
-        <input type="file" id="imageInput" name="image" accept="image/*" required />
-        <button type="submit">Upload</button>
-    </form>
+    <h1>OCR Image Text Extractor</h1>
+    
+    <div id="uploadForm">
+        <h2>Select an Image</h2>
+        <form id="ocrForm">
+            <input type="file" id="imageInput" name="image" accept="image/*" required />
+            <div>
+                <img id="imagePreview" src="" alt="Preview" />
+            </div>
+            <button type="submit">Extract Text</button>
+        </form>
+        <div id="statusMessage"></div>
+    </div>
 
     <h2>Extracted Text:</h2>
-    <div id="output" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px;"></div>
+    <div id="output">No text extracted yet</div>
 
     <script>
+        // Preview image before upload
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const preview = document.getElementById('imagePreview');
+            const file = event.target.files[0];
+            
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = 'block';
+            }
+        });
+
         // Handle form submission
-        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Prevent default form submission (page reload)
+        document.getElementById('ocrForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
 
             const outputDiv = document.getElementById('output');
-            outputDiv.innerText = "Uploading and Processing..."; // Loading message
-
+            const statusMessage = document.getElementById('statusMessage');
             const imageInput = document.getElementById('imageInput');
 
+            // Reset previous messages
+            statusMessage.innerHTML = "";
+            outputDiv.className = "";
+
             if (imageInput.files.length === 0) {
-                outputDiv.innerText = "Please select an image.";
+                statusMessage.innerHTML = "<span class='error'>Please select an image.</span>";
                 return;
             }
+
+            // Show loading status
+            statusMessage.textContent = "Uploading and processing image...";
+            outputDiv.textContent = "Working on it...";
 
             const formData = new FormData();
             formData.append('image', imageInput.files[0]);
 
             try {
-                console.log("Sending request...");
+                console.log("Sending request to backend...");
+                
+                // Make sure the URL matches your backend server address and port
                 const response = await fetch('http://localhost:5000/upload', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    // Adding these headers explicitly for troubleshooting
+                    headers: {
+                        // Don't set Content-Type with FormData, browser will set it with boundary
+                    },
                 });
 
-                // Check for valid response
+                console.log("Response status:", response.status);
+                
+                // Handle HTTP errors
                 if (!response.ok) {
-                    throw new Error('Failed to upload image');
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
                 }
 
-                console.log("Waiting for JSON response...");
+                // Parse the JSON response
                 const data = await response.json();
                 console.log('Server response:', data);
 
-                // Check if extracted_text is available
+                // Display the extracted text
                 if (data && data.extracted_text) {
-                    outputDiv.innerText = data.extracted_text;
+                    statusMessage.textContent = "Text extraction completed successfully!";
+                    outputDiv.textContent = data.extracted_text;
                 } else {
-                    outputDiv.innerText = "No extracted text received.";
+                    statusMessage.innerHTML = "<span class='error'>No text could be extracted from the image.</span>";
+                    outputDiv.textContent = "The OCR process completed but no text was found.";
                 }
 
             } catch (error) {
-                console.error('Error during fetch:', error);
-                outputDiv.innerText = "An error occurred while uploading or processing.";
+                console.error('Error during fetch operation:', error);
+                statusMessage.innerHTML = `<span class='error'>Error: ${error.message}</span>`;
+                outputDiv.innerHTML = "An error occurred during the OCR process. Please check the console for details.";
+                
+                // Add specific guidance for debugging
+                const errorDetails = document.createElement('div');
+                errorDetails.innerHTML = `
+                    <p>Troubleshooting steps:</p>
+                    <ol>
+                        <li>Make sure your backend server is running at http://localhost:5000</li>
+                        <li>Check if the 'upload' folder exists and is writeable</li>
+                        <li>Verify that all required npm packages are installed</li>
+                        <li>Check browser console for detailed error messages</li>
+                    </ol>
+                `;
+                outputDiv.appendChild(errorDetails);
             }
         });
     </script>
-
 </body>
 </html>
