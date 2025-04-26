@@ -1,4 +1,4 @@
-# OCR Web Application
+# OCR Web Application (MediScan)
 
 A web-based Optical Character Recognition (OCR) application that extracts text from images using Tesseract.js with image preprocessing capabilities.
 
@@ -20,7 +20,7 @@ A web-based Optical Character Recognition (OCR) application that extracts text f
 1. Clone the repository:
    ```bash
    git clone https://github.com/mayankanandgce/MediScan
-   cd ocr-web-app
+   cd mediScan
    ```
 
 2. Install dependencies:
