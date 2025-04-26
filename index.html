@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OCR Upload</title>
+</head>
+<body>
+
+    <h1>Upload Image for OCR</h1>
+
+    <form id="uploadForm">
+        <input type="file" id="imageInput" name="image" accept="image/*" required />
+        <button type="submit">Upload</button>
+    </form>
+
+    <h2>Extracted Text:</h2>
+    <div id="output" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 10px;"></div>
+
+    <script>
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission (page reload)
+
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerText = "Uploading and Processing..."; // Loading message
+
+            const imageInput = document.getElementById('imageInput');
+
+            if (imageInput.files.length === 0) {
+                outputDiv.innerText = "Please select an image.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+
+            try {
+                console.log("Sending request...");
+                const response = await fetch('http://localhost:5000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Check for valid response
+                if (!response.ok) {
+                    throw new Error('Failed to upload image');
+                }
+
+                console.log("Waiting for JSON response...");
+                const data = await response.json();
+                console.log('Server response:', data);
+
+                // Check if extracted_text is available
+                if (data && data.extracted_text) {
+                    outputDiv.innerText = data.extracted_text;
+                } else {
+                    outputDiv.innerText = "No extracted text received.";
+                }
+
+            } catch (error) {
+                console.error('Error during fetch:', error);
+                outputDiv.innerText = "An error occurred while uploading or processing.";
+            }
+        });
+    </script>
+
+</body>
+</html>
